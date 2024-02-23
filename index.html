@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* Define some styles for the elements with the "edit" and "delete" classes */
+        .edit,.delete{
+            background-color:red;
+            cursor: pointer;
+            color:white;
+            padding: 3px;
+            border-radius:5px;
+        }
+        /* Define some styles for the element with the "update" class */
+        .update{
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <form>
+        <input type="text"class="todo"placeholder='Todo..'>
+
+        <button class="add"type="button" onclick=" addData()" >Add Todo</button>
+    
+        <button class="update"type="button">Update Todo</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Todo</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+    
+        <tbody></tbody>
+    </table>
+    
+    <script>
+        let api = "https://script.google.com/macros/s/AKfycbxOSWyOQXxPUDNuSYd6__y5ZIWUCUIxMN_VCMforIoa4yALyKVTjnKA54u09R5oLNuD/exec";
+        let form = document.querySelector("form");
+        let add = document.querySelector(".add");
+        let update = document.querySelector(".update");
+        let tbody = document.querySelector("tbody");
+        function addData() {
+            
+            add.textContent="Adding.."
+      
+            let obj = {
+                todo:form[0].value
+            }
+
+            fetch(api,{
+                method:"POST",
+                body:JSON.stringify(obj)
+            })
+            .then(res=>res.text())
+            .then(data=>{
+                alert(data);
+                add.textContent="To do"
+                form.reset();
+                readData();
+            });
+        }
+
+        function readData(){
+            // Use fetch to make a GET request to the API endpoint and parse the JSON response
+            fetch(api)
+            .then(res=>res.json())
+            .then(data=>{
+                // Extract the todo data from the response
+                let todo = data.todo;
+                // Map each todo item to a string of table row HTML
+                let trtd = todo.map(each=>{
+                    return `
+                    <tr>
+                    <td class="id">${each[0]}</td>    
+                    <td class="data">${each[1]}</td>
+                    <td class="edit"onclick="updateCall(this,${each[0]})">Edit</td>    
+                    <td class="delete"onclick="delData(${each[0]})">Delete</td>      
+                    </tr>
+                    
+                    `
+                })
+                // Join the array of table row HTML strings and set the innerHTML of the tbody element to it
+                tbody.innerHTML=trtd.join("");
+            })
+        }
+        readData();
+
+        function delData(id){
+            // Use fetch to make a GET request to the API endpoint to delete the todo item with the given id
+            fetch(api+`?del=true&id=${id}`)
+            .then(res=>res.text())
+            .then(data=>{
+                // Update the UI by calling readData() function and show an alert with the response message from the server
+                readData()
+                alert(data)
+            })
+        }
+
+        function updateCall(elm,id){
+            // Hide the add button and show the update button
+            add.style.display="none"
+            update.style.display="unset"
+            // Get the current todo value from the data cell of the current row and set the form value to it
+            let todo = elm.parentElement.querySelector(".data").textContent;
+            form[0].value=todo;
+            // Set the onclick attribute of the update button to call updateData() function with the current todo item id as an argument
+            update.setAttribute("onclick",`updateData(${id})`)
+        }
+        function updateData(id){
+            update.textContent="Updating.."
+            // send a fetch request to update the todo data
+            fetch(api+`?update=true&id=${id}&data=${form[0].value}`)
+            .then(res=>res.text())
+            .then(data=>{
+                // read the updated data
+                readData()
+                alert(data)
+                // reset the form input and update button text
+                
+                update.textContent="Update Todo"
+                // show the add button and hide the update button
+                add.style.display="unset"
+                update.style.display="none"
+                form.reset();
+            })
+        }
+
+    </script>
+    
+</body>
+</html>
